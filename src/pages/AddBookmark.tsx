@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface BookmarkItem {
   id: number;
@@ -11,16 +11,48 @@ interface BookmarkItem {
 
 function AddBookmark() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const id = searchParams.get("id");
+
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
 
+  // 수정 모드일 경우 데이터 불러오기
+  useEffect(() => {
+    if (id) {
+      const bookmarks: BookmarkItem[] = JSON.parse(localStorage.getItem("bookmarks") || "[]");
+      const bookmarkToEdit = bookmarks.find((b) => b.id === Number(id));
+      if (bookmarkToEdit) {
+        setTitle(bookmarkToEdit.title);
+        setUrl(bookmarkToEdit.url);
+        setDescription(bookmarkToEdit.description);
+        setTags(bookmarkToEdit.tags.join(", "));
+      }
+    }
+  }, [id]);
+
+  // URL 유효성 검사
+  const isValidUrl = (str: string) => {
+    try {
+      new URL(str);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!isValidUrl(url)) {
+      alert("올바른 URL을 입력해주세요.");
+      return;
+    }
+
     const newBookmark: BookmarkItem = {
-      id: Date.now(),
+      id: id ? Number(id) : Date.now(),
       title,
       url,
       description,
@@ -30,17 +62,23 @@ function AddBookmark() {
         .filter(Boolean),
     };
 
-    const existing = JSON.parse(localStorage.getItem("bookmarks") || "[]");
-    const updated = [newBookmark, ...existing];
-    localStorage.setItem("bookmarks", JSON.stringify(updated));
+    const existing: BookmarkItem[] = JSON.parse(localStorage.getItem("bookmarks") || "[]");
 
+    let updated: BookmarkItem[];
+    if (id) {
+      updated = existing.map((b) => (b.id === Number(id) ? newBookmark : b));
+    } else {
+      updated = [newBookmark, ...existing];
+    }
+
+    localStorage.setItem("bookmarks", JSON.stringify(updated));
     navigate("/");
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center items-center px-4 py-10">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">새 북마크 추가</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">{id ? "북마크 수정" : "새 북마크 추가"}</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -64,7 +102,7 @@ function AddBookmark() {
           </div>
 
           <button type="submit" className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition">
-            추가하기
+            {id ? "수정 완료" : "추가하기"}
           </button>
         </form>
       </div>
