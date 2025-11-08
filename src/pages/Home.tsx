@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import BookmarkCard from "../components/BookmarkCard";
 
@@ -11,78 +11,103 @@ interface BookmarkItem {
 }
 
 function Home() {
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredBookmarks, setFilteredBookmarks] = useState<BookmarkItem[]>([]);
   const navigate = useNavigate();
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [filtered, setFiltered] = useState<BookmarkItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [displayQuery, setDisplayQuery] = useState("");
+  const [searchResultCount, setSearchResultCount] = useState<number | null>(null);
 
+  // 로컬 스토리지에서 북마크 불러오기 (임시. 이후 supabase에서 불러오도록 변경 예정)
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("bookmarks") || "[]");
     setBookmarks(stored);
-    setFilteredBookmarks(stored);
+    setFiltered(stored);
   }, []);
 
+  const handleSearch = () => {
+    const trimmed = searchQuery.trim().toLowerCase();
+    if (!trimmed) {
+      setFiltered(bookmarks);
+      setDisplayQuery("");
+      setSearchResultCount(null);
+      return;
+    }
+
+    const result = bookmarks.filter((b) => b.title.toLowerCase().includes(trimmed) || b.description.toLowerCase().includes(trimmed) || b.tags.some((t) => t.toLowerCase().includes(trimmed)));
+
+    setFiltered(result);
+    setDisplayQuery(searchQuery);
+    setSearchResultCount(result.length);
+  };
+
+  const handleTagClick = (tag: string) => {
+    setSearchQuery(tag);
+    const trimmed = tag.trim().toLowerCase();
+    const result = bookmarks.filter((b) => b.title.toLowerCase().includes(trimmed) || b.description.toLowerCase().includes(trimmed) || b.tags.some((t) => t.toLowerCase().includes(trimmed)));
+    setFiltered(result);
+    setDisplayQuery(tag);
+    setSearchResultCount(result.length);
+  };
+
   const handleDelete = (id: number) => {
-    if (!window.confirm("정말 삭제하시겠습니까?")) return;
     const updated = bookmarks.filter((b) => b.id !== id);
     setBookmarks(updated);
-    setFilteredBookmarks(updated);
+    setFiltered(updated);
     localStorage.setItem("bookmarks", JSON.stringify(updated));
-  };
-
-  const handleEdit = (id: number) => {
-    navigate(`/edit/${id}`);
-  };
-
-  const handleSearch = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const term = searchTerm.toLowerCase().trim();
-
-    if (term === "") {
-      setFilteredBookmarks(bookmarks);
-    } else {
-      const result = bookmarks.filter((b) => b.title.toLowerCase().includes(term) || b.tags.some((tag) => tag.toLowerCase().includes(term)));
-      setFilteredBookmarks(result);
+    if (searchResultCount !== null) {
+      setSearchResultCount(filtered.filter((b) => b.id !== id).length);
     }
   };
 
-  const handleReset = () => {
-    setSearchTerm("");
-    setFilteredBookmarks(bookmarks);
+  const handleEdit = (id: number) => {
+    navigate(`/add?id=${id}`);
   };
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-10">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">내 북마크</h1>
-
-          <form onSubmit={handleSearch} className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
-              <input type="text" placeholder="제목 또는 태그 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 pr-8 w-full focus:ring-2 focus:ring-indigo-400 outline-none" />
-              {searchTerm && (
-                <button type="button" onClick={handleReset} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  ✖
-                </button>
-              )}
-            </div>
-
-            <button type="submit" className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-              검색
-            </button>
-
-            <button type="button" onClick={() => navigate("/add")} className="bg-gray-100 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-200 transition">
-              + 새 북마크
-            </button>
-          </form>
+          <button onClick={() => navigate("/add")} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+            + 새 북마크
+          </button>
         </div>
 
-        {filteredBookmarks.length === 0 ? (
-          <p className="text-gray-500 text-center mt-10">{bookmarks.length === 0 ? "아직 추가된 북마크가 없습니다." : "검색 결과가 없습니다."}</p>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="relative flex-1">
+            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} placeholder="검색어를 입력하세요 (제목, 설명, 태그)" className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 focus:ring-2 focus:ring-indigo-400 outline-none" />
+
+            {searchQuery && (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  setFiltered(bookmarks);
+                  setDisplayQuery("");
+                  setSearchResultCount(null);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          <button onClick={handleSearch} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+            검색
+          </button>
+        </div>
+
+        <p className="text-gray-500 text-sm mb-4">
+          전체 북마크 {bookmarks.length}개{searchResultCount !== null && ` / "${displayQuery}" 검색 결과 ${searchResultCount}개`}
+        </p>
+
+        {filtered.length === 0 ? (
+          <p className="text-gray-500 text-center">등록된 북마크가 없습니다.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredBookmarks.map((item) => (
-              <BookmarkCard key={item.id} item={item} onDelete={handleDelete} onEdit={handleEdit} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filtered.map((item) => (
+              <BookmarkCard key={item.id} item={item} onDelete={handleDelete} onEdit={handleEdit} onTagClick={handleTagClick} />
             ))}
           </div>
         )}

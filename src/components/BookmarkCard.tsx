@@ -12,9 +12,10 @@ interface Props {
   item: BookmarkItem;
   onDelete: (id: number) => void;
   onEdit: (id: number) => void;
+  onTagClick: (tag: string) => void;
 }
 
-function BookmarkCard({ item, onDelete, onEdit }: Props) {
+function BookmarkCard({ item, onDelete, onEdit, onTagClick }: Props) {
   return (
     <div className="bg-white rounded-xl shadow p-5 flex flex-col justify-between hover:shadow-md transition h-full">
       <div>
@@ -25,9 +26,9 @@ function BookmarkCard({ item, onDelete, onEdit }: Props) {
         {item.tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1">
             {item.tags.map((tag, index) => (
-              <span key={index} className="text-xs bg-indigo-100 text-indigo-600 px-2 py-1 rounded-md">
+              <button key={`${tag}-${index}`} onClick={() => onTagClick(tag)} type="button" className="text-xs bg-indigo-100 text-indigo-600 px-2 py-1 rounded-md hover:bg-indigo-200 transition">
                 #{tag}
-              </span>
+              </button>
             ))}
           </div>
         )}
