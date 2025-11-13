@@ -6,6 +6,7 @@ interface BookmarkItem {
   url: string;
   description: string;
   tags: string[];
+  favorite: boolean;
 }
 
 interface Props {
@@ -13,15 +14,21 @@ interface Props {
   onDelete: (id: number) => void;
   onEdit: (id: number) => void;
   onTagClick: (tag: string) => void;
+  onFavoriteToggle: (id: number) => void;
 }
 
-function BookmarkCard({ item, onDelete, onEdit, onTagClick }: Props) {
+function BookmarkCard({ item, onDelete, onEdit, onTagClick, onFavoriteToggle }: Props) {
   return (
     <div className="bg-white rounded-xl shadow p-5 flex flex-col justify-between hover:shadow-md transition h-full">
       <div className="flex-1">
-        <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-lg font-semibold text-indigo-700 hover:underline line-clamp-1">
-          {item.title.length > 20 ? item.title.slice(0, 20) + "…" : item.title}
-        </a>
+        <div className="flex justify-between items-start mb-2">
+          <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-lg font-semibold text-indigo-700 hover:underline line-clamp-1">
+            {item.title.length > 20 ? item.title.slice(0, 20) + "…" : item.title}
+          </a>
+          <button onClick={() => onFavoriteToggle(item.id)} className={`ml-2 text-xl ${item.favorite ? "text-yellow-400" : "text-gray-300"}`} title={item.favorite ? "즐겨찾기 해제" : "즐겨찾기"}>
+            ★
+          </button>
+        </div>
 
         <p className="text-sm text-gray-600 mt-2 line-clamp-3">{item.description}</p>
 
@@ -37,6 +44,7 @@ function BookmarkCard({ item, onDelete, onEdit, onTagClick }: Props) {
         )}
       </div>
 
+      {/* 수정/삭제 버튼 */}
       <div className="flex justify-end gap-3 mt-4">
         <button onClick={() => onEdit(item.id)} className="text-black-500 hover:text-indigo-700 text-sm font-medium">
           수정

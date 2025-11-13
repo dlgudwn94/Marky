@@ -8,6 +8,7 @@ interface BookmarkItem {
   url: string;
   description: string;
   tags: string[];
+  favorite: boolean;
 }
 
 function Home() {
@@ -18,7 +19,6 @@ function Home() {
   const [displayQuery, setDisplayQuery] = useState("");
   const [searchResultCount, setSearchResultCount] = useState<number | null>(null);
 
-  // 로컬 스토리지에서 북마크 불러오기 (임시. 이후 supabase에서 불러오도록 변경 예정)
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("bookmarks") || "[]");
     setBookmarks(stored);
@@ -64,6 +64,15 @@ function Home() {
     navigate(`/add?id=${id}`);
   };
 
+  const handleFavoriteToggle = (id: number) => {
+    const updated = bookmarks.map((b) => (b.id === id ? { ...b, favorite: !b.favorite } : b));
+    setBookmarks(updated);
+    setFiltered((prev) => prev.map((b) => (b.id === id ? { ...b, favorite: !b.favorite } : b)));
+    localStorage.setItem("bookmarks", JSON.stringify(updated));
+  };
+
+  const sortedFiltered = [...filtered].sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-10">
       <div className="max-w-4xl mx-auto">
@@ -77,7 +86,6 @@ function Home() {
         <div className="flex items-center gap-2 mb-2">
           <div className="relative flex-1">
             <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} placeholder="검색어를 입력하세요 (제목, 설명, 태그)" className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 focus:ring-2 focus:ring-indigo-400 outline-none" />
-
             {searchQuery && (
               <button
                 onClick={() => {
@@ -102,12 +110,12 @@ function Home() {
           전체 북마크 {bookmarks.length}개{searchResultCount !== null && ` / "${displayQuery}" 검색 결과 ${searchResultCount}개`}
         </p>
 
-        {filtered.length === 0 ? (
+        {sortedFiltered.length === 0 ? (
           <p className="text-gray-500 text-center">등록된 북마크가 없습니다.</p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map((item) => (
-              <BookmarkCard key={item.id} item={item} onDelete={handleDelete} onEdit={handleEdit} onTagClick={handleTagClick} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
+            {sortedFiltered.map((item) => (
+              <BookmarkCard key={item.id} item={item} onDelete={handleDelete} onEdit={handleEdit} onTagClick={handleTagClick} onFavoriteToggle={handleFavoriteToggle} />
             ))}
           </div>
         )}
