@@ -2,19 +2,28 @@ import { create } from "zustand";
 import { supabase } from "../lib/supabaseClient";
 
 interface AuthState {
+  session: any | null;
   user: any | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  setSession: (session: any) => void;
+  fetchSession: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
+  session: null,
   user: null,
-  login: async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (!error) set({ user: data.user });
+
+  setSession: (session) => {
+    set({
+      session,
+      user: session?.user ?? null,
+    });
   },
-  logout: async () => {
-    await supabase.auth.signOut();
-    set({ user: null });
+
+  fetchSession: async () => {
+    const { data } = await supabase.auth.getSession();
+    set({
+      session: data.session,
+      user: data.session?.user ?? null,
+    });
   },
 }));

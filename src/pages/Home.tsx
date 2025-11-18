@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../contexts/AuthContext";
 import BookmarkCard from "../components/BookmarkCard";
+import { useNavigate } from "react-router-dom";
 
 interface BookmarkItem {
   id: number;
@@ -8,117 +10,101 @@ interface BookmarkItem {
   url: string;
   description: string;
   tags: string[];
-  favorite: boolean;
 }
 
 function Home() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
-  const [filtered, setFiltered] = useState<BookmarkItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [displayQuery, setDisplayQuery] = useState("");
-  const [searchResultCount, setSearchResultCount] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterTag, setFilterTag] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<BookmarkItem[]>([]);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("bookmarks") || "[]");
-    setBookmarks(stored);
-    setFiltered(stored);
-  }, []);
+    if (!user) return;
+
+    const fetchBookmarks = async () => {
+      const { data } = await supabase.from("bookmarks").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
+      setBookmarks(data || []);
+      setSearchResults(data || []);
+    };
+
+    fetchBookmarks();
+
+    const channel = supabase
+      .channel("public:bookmarks")
+      .on("postgres_changes", { event: "*", schema: "public", table: "bookmarks", filter: `user_id=eq.${user.id}` }, (payload) => {
+        fetchBookmarks();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
+
+  const handleDelete = async (id: number) => {
+    await supabase.from("bookmarks").delete().eq("id", id);
+  };
 
   const handleSearch = () => {
-    const trimmed = searchQuery.trim().toLowerCase();
-    if (!trimmed) {
-      setFiltered(bookmarks);
-      setDisplayQuery("");
-      setSearchResultCount(null);
-      return;
+    let filtered = bookmarks;
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = bookmarks.filter((b) => b.title.toLowerCase().includes(term) || b.description.toLowerCase().includes(term) || b.tags.some((tag) => tag.toLowerCase().includes(term)));
     }
-
-    const result = bookmarks.filter((b) => b.title.toLowerCase().includes(trimmed) || b.description.toLowerCase().includes(trimmed) || b.tags.some((t) => t.toLowerCase().includes(trimmed)));
-
-    setFiltered(result);
-    setDisplayQuery(searchQuery);
-    setSearchResultCount(result.length);
+    if (filterTag) {
+      filtered = filtered.filter((b) => b.tags.includes(filterTag));
+    }
+    setSearchResults(filtered);
   };
 
   const handleTagClick = (tag: string) => {
-    setSearchQuery(tag);
-    const trimmed = tag.trim().toLowerCase();
-    const result = bookmarks.filter((b) => b.title.toLowerCase().includes(trimmed) || b.description.toLowerCase().includes(trimmed) || b.tags.some((t) => t.toLowerCase().includes(trimmed)));
-    setFiltered(result);
-    setDisplayQuery(tag);
-    setSearchResultCount(result.length);
+    setFilterTag(tag);
+    const filtered = bookmarks.filter((b) => b.tags.includes(tag));
+    setSearchResults(filtered);
   };
 
-  const handleDelete = (id: number) => {
-    const updated = bookmarks.filter((b) => b.id !== id);
-    setBookmarks(updated);
-    setFiltered(updated);
-    localStorage.setItem("bookmarks", JSON.stringify(updated));
-    if (searchResultCount !== null) {
-      setSearchResultCount(filtered.filter((b) => b.id !== id).length);
-    }
+  const clearFilter = () => {
+    setFilterTag(null);
+    setSearchResults(bookmarks);
   };
-
-  const handleEdit = (id: number) => {
-    navigate(`/add?id=${id}`);
-  };
-
-  const handleFavoriteToggle = (id: number) => {
-    const updated = bookmarks.map((b) => (b.id === id ? { ...b, favorite: !b.favorite } : b));
-    setBookmarks(updated);
-    setFiltered((prev) => prev.map((b) => (b.id === id ? { ...b, favorite: !b.favorite } : b)));
-    localStorage.setItem("bookmarks", JSON.stringify(updated));
-  };
-
-  const sortedFiltered = [...filtered].sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0));
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">내 북마크</h1>
-          <button onClick={() => navigate("/add")} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-            + 새 북마크
+    <div className="p-4">
+      <div className="flex gap-2 mb-4">
+        <input
+          type="text"
+          placeholder="검색어를 입력하고 엔터"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSearch();
+          }}
+          className="flex-1 border border-gray-300 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-400"
+        />
+        <button onClick={handleSearch} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+          검색
+        </button>
+        <button onClick={() => navigate("/add")} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+          새 북마크
+        </button>
+      </div>
+
+      {filterTag && (
+        <div className="mb-4">
+          <span className="text-sm text-gray-500 mr-2">태그 필터:</span>
+          <span className="bg-indigo-100 text-indigo-600 px-2 py-1 rounded mr-2">{filterTag}</span>
+          <button onClick={clearFilter} className="text-sm text-red-500 underline">
+            지우기
           </button>
         </div>
+      )}
 
-        <div className="flex items-center gap-2 mb-2">
-          <div className="relative flex-1">
-            <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} placeholder="검색어를 입력하세요 (제목, 설명, 태그)" className="w-full border border-gray-300 rounded-lg px-3 py-2 pr-10 focus:ring-2 focus:ring-indigo-400 outline-none" />
-            {searchQuery && (
-              <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setFiltered(bookmarks);
-                  setDisplayQuery("");
-                  setSearchResultCount(null);
-                }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg"
-              >
-                ×
-              </button>
-            )}
-          </div>
-
-          <button onClick={handleSearch} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
-            검색
-          </button>
-        </div>
-
-        <p className="text-gray-500 text-sm mb-4">
-          전체 북마크 {bookmarks.length}개{searchResultCount !== null && ` / "${displayQuery}" 검색 결과 ${searchResultCount}개`}
-        </p>
-
-        {sortedFiltered.length === 0 ? (
-          <p className="text-gray-500 text-center">등록된 북마크가 없습니다.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
-            {sortedFiltered.map((item) => (
-              <BookmarkCard key={item.id} item={item} onDelete={handleDelete} onEdit={handleEdit} onTagClick={handleTagClick} onFavoriteToggle={handleFavoriteToggle} />
-            ))}
-          </div>
-        )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        {searchResults.map((bookmark) => (
+          <BookmarkCard key={bookmark.id} item={bookmark} onDelete={handleDelete} onEdit={(id) => navigate(`/add?id=${id}`)} onTagClick={handleTagClick} />
+        ))}
       </div>
     </div>
   );

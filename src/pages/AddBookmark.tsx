@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-
-interface BookmarkItem {
-  id: number;
-  title: string;
-  url: string;
-  description: string;
-  tags: string[];
-}
+import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../contexts/AuthContext";
 
 function AddBookmark() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const id = searchParams.get("id");
 
@@ -19,21 +14,21 @@ function AddBookmark() {
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
 
-  // 수정 모드일 경우 데이터 불러오기
   useEffect(() => {
-    if (id) {
-      const bookmarks: BookmarkItem[] = JSON.parse(localStorage.getItem("bookmarks") || "[]");
-      const bookmarkToEdit = bookmarks.find((b) => b.id === Number(id));
-      if (bookmarkToEdit) {
-        setTitle(bookmarkToEdit.title);
-        setUrl(bookmarkToEdit.url);
-        setDescription(bookmarkToEdit.description);
-        setTags(bookmarkToEdit.tags.join(", "));
-      }
+    if (id && user) {
+      const fetchBookmark = async () => {
+        const { data } = await supabase.from("bookmarks").select("*").eq("id", id).eq("user_id", user.id).single();
+        if (data) {
+          setTitle(data.title);
+          setUrl(data.url);
+          setDescription(data.description);
+          setTags(data.tags.join(", "));
+        }
+      };
+      fetchBookmark();
     }
-  }, [id]);
+  }, [id, user]);
 
-  // URL 유효성 검사
   const isValidUrl = (str: string) => {
     try {
       new URL(str);
@@ -43,16 +38,15 @@ function AddBookmark() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (!user) return;
     if (!isValidUrl(url)) {
       alert("올바른 URL을 입력해주세요.");
       return;
     }
 
-    const newBookmark: BookmarkItem = {
-      id: id ? Number(id) : Date.now(),
+    const bookmark = {
       title,
       url,
       description,
@@ -60,18 +54,15 @@ function AddBookmark() {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
+      user_id: user.id,
     };
 
-    const existing: BookmarkItem[] = JSON.parse(localStorage.getItem("bookmarks") || "[]");
-
-    let updated: BookmarkItem[];
     if (id) {
-      updated = existing.map((b) => (b.id === Number(id) ? newBookmark : b));
+      await supabase.from("bookmarks").update(bookmark).eq("id", id);
     } else {
-      updated = [newBookmark, ...existing];
+      await supabase.from("bookmarks").insert(bookmark);
     }
 
-    localStorage.setItem("bookmarks", JSON.stringify(updated));
     navigate("/");
   };
 
