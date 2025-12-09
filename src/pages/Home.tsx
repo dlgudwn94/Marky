@@ -71,11 +71,11 @@ function Home() {
   };
 
   return (
-    <div className="p-4">
+    <div className="w-full max-w-4xl mx-auto px-4 mt-8">
       <div className="flex gap-2 mb-4">
         <input
           type="text"
-          placeholder="검색어를 입력하고 엔터"
+          placeholder="검색어를 입력해 주세요"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyDown={(e) => {

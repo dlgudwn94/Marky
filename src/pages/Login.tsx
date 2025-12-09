@@ -29,7 +29,7 @@ function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="w-full min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
       <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-6">로그인</h1>
 
