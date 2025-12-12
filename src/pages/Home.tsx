@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import BookmarkCard from "../components/BookmarkCard";
 import { useNavigate } from "react-router-dom";
+import { Search, BookmarkPlus } from "lucide-react";
 
 interface BookmarkItem {
   id: number;
@@ -72,23 +73,27 @@ function Home() {
 
   return (
     <div className="w-full max-w-4xl mx-auto px-4 mt-8">
-      <div className="flex gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="검색어를 입력해 주세요"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSearch();
-          }}
-          className="flex-1 border border-gray-300 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-400"
-        />
-        <button onClick={handleSearch} className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-          검색
-        </button>
-        <button onClick={() => navigate("/add")} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-          새 북마크
-        </button>
+      <div className="flex justify-end mb-6">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="검색어를 입력해 주세요"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSearch();
+            }}
+            className="flex-1 border border-gray-300 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+
+          <button onClick={handleSearch} className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center justify-center">
+            <Search className="w-5 h-5" />
+          </button>
+
+          <button onClick={() => navigate("/add")} className="p-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center justify-center">
+            <BookmarkPlus className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {filterTag && (
