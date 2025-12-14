@@ -1,67 +1,68 @@
 import { useState } from "react";
-import { supabase } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabaseClient";
 import { getErrorMessage } from "../utils/errorMessages";
 import { isValidEmail } from "../utils/validation";
+import Input from "../components/Input";
+
+interface LoginErrors {
+  email?: string;
+  password?: string;
+  form?: string;
+}
 
 function Login() {
   const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<LoginErrors>({});
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setErrors({});
 
     if (!isValidEmail(email)) {
-      setError("올바른 이메일 형식을 입력해주세요.");
+      setErrors({ email: "올바른 이메일 형식을 입력해주세요." });
       return;
     }
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!password) {
+      setErrors({ password: "비밀번호를 입력해주세요." });
+      return;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
     if (error) {
-      setError(getErrorMessage(error.message));
-    } else {
-      navigate("/");
+      setErrors({
+        form: getErrorMessage(error.message),
+      });
+      return;
     }
+
+    navigate("/");
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
+    <div className="w-full min-h-[calc(100vh-64px)] flex items-center justify-center px-4">
+      <div className="rounded-2xl shadow-lg p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-6">로그인</h1>
 
         <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">이메일</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none" />
-          </div>
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">비밀번호</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 outline-none" />
-            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-          </div>
+          <Input label="이메일" type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} />
+
+          <Input label="비밀번호" type="password" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} />
+
+          {errors.form && <div className="mb-4 rounded-lg text-sm text-red-600">{errors.form}</div>}
 
           <button type="submit" className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition">
             로그인
           </button>
         </form>
-
-        <div className="text-center text-sm text-gray-500 mt-4">
-          계정이 없으신가요?{" "}
-          <a
-            href="/signup"
-            className="text-indigo-600 hover:underline"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/signup");
-            }}
-          >
-            회원가입
-          </a>
-        </div>
       </div>
     </div>
   );

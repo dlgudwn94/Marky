@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { getErrorMessage } from "../utils/errorMessages";
 import { isValidEmail } from "../utils/validation";
+import Input from "../components/Input";
 
 function Signup() {
   const navigate = useNavigate();
@@ -10,19 +11,37 @@ function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordCheck, setPasswordCheck] = useState("");
-  const [error, setError] = useState("");
+
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+    passwordCheck?: string;
+    form?: string;
+  }>({});
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+
+    const newErrors: typeof errors = {};
 
     if (!isValidEmail(email)) {
-      setError("올바른 이메일 형식을 입력해주세요.");
+      newErrors.email = "올바른 이메일 형식을 입력해주세요.";
+    }
+
+    if (password.length < 6) {
+      newErrors.password = "비밀번호는 최소 6자 이상이어야 합니다.";
+    }
+
+    if (password !== passwordCheck) {
+      newErrors.passwordCheck = "비밀번호가 서로 일치하지 않습니다.";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
-    if (password !== passwordCheck) {
-      return setError("비밀번호가 서로 일치하지 않습니다.");
-    }
+
+    setErrors({});
 
     const { error } = await supabase.auth.signUp({
       email,
@@ -30,7 +49,9 @@ function Signup() {
     });
 
     if (error) {
-      setError(getErrorMessage(error.message));
+      setErrors({
+        form: getErrorMessage(error.message),
+      });
       return;
     }
 
@@ -39,26 +60,18 @@ function Signup() {
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
-      <div className="bg-white rounded-2xl shadow-lg p-8 w-full max-w-md">
+    <div className="w-full min-h-[calc(100vh-64px)] flex items-center justify-center px-4">
+      <div className="rounded-2xl shadow-lg p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-center mb-6">회원가입</h1>
 
         <form onSubmit={handleSignup} className="space-y-4">
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">이메일</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
-          </div>
+          <Input label="이메일" type="email" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} />
 
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">비밀번호</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
-          </div>
+          <Input label="비밀번호" type="password" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} />
 
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">비밀번호 확인</label>
-            <input type="password" value={passwordCheck} onChange={(e) => setPasswordCheck(e.target.value)} required className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 outline-none" />
-            {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
-          </div>
+          <Input label="비밀번호 확인" type="password" value={passwordCheck} onChange={(e) => setPasswordCheck(e.target.value)} error={errors.passwordCheck} />
+
+          {errors.form && <div className="mb-4 rounded-lg text-sm text-red-600">{errors.form}</div>}
 
           <button type="submit" className="w-full bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700 transition">
             회원가입
