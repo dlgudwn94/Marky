@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import BookmarkCard from "../components/BookmarkCard";
+import Input from "../components/Input";
 import { useNavigate } from "react-router-dom";
 import { Search, BookmarkPlus } from "lucide-react";
 
@@ -75,15 +76,14 @@ function Home() {
     <div className="w-full max-w-4xl mx-auto px-4 mt-8">
       <div className="flex justify-end mb-6">
         <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="검색어를 입력해 주세요"
+          <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") handleSearch();
             }}
-            className="flex-1 border border-gray-300 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-400"
+            placeholder="검색어를 입력해 주세요"
+            className="flex-1"
           />
 
           <button onClick={handleSearch} className="p-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 flex items-center justify-center">
