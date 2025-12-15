@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import { getErrorMessage } from "../utils/errorMessages";
 import { isValidEmail } from "../utils/validation";
 import Input from "../components/Input";
+import { Link } from "react-router-dom";
 
 interface LoginErrors {
   email?: string;
@@ -63,6 +64,13 @@ function Login() {
             로그인
           </button>
         </form>
+
+        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          아직 계정이 없으신가요?{" "}
+          <Link to="/signup" className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
+            회원가입
+          </Link>
+        </div>
       </div>
     </div>
   );

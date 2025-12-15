@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Menu, X } from "lucide-react";
+import DarkModeToggle from "./DarkModeToggle";
 
 function Header() {
   const { user, logout } = useAuth();
@@ -14,45 +15,53 @@ function Header() {
   };
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
+    <header className="dark:bg-gray-900 shadow-md sticky top-0 z-50">
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between relative">
         <Link to="/" className="text-xl font-bold text-indigo-600">
           Marky
         </Link>
 
         {/* 데스크탑 메뉴 */}
-        <nav className="hidden md:flex items-center space-x-6">
-          {user ? (
-            <>
-              <Link to="/" className="hover:text-indigo-500">
-                홈
-              </Link>
-              <Link to="/add" className="hover:text-indigo-500">
-                추가
-              </Link>
-              <Link to="/settings" className="hover:text-indigo-500">
-                설정
-              </Link>
-              <button onClick={handleLogout} className="hover:text-indigo-500">
-                로그아웃
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="hover:text-indigo-500">
-                로그인
-              </Link>
-              <Link to="/signup" className="hover:text-indigo-500">
-                회원가입
-              </Link>
-            </>
-          )}
-        </nav>
+        <div className="hidden md:flex items-center space-x-4">
+          <DarkModeToggle />
+
+          <nav className="flex items-center space-x-6">
+            {user ? (
+              <>
+                <Link to="/" className="hover:text-indigo-500">
+                  홈
+                </Link>
+                <Link to="/add" className="hover:text-indigo-500">
+                  추가
+                </Link>
+                <Link to="/settings" className="hover:text-indigo-500">
+                  설정
+                </Link>
+                <button onClick={handleLogout} className="hover:text-indigo-500">
+                  로그아웃
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="hover:text-indigo-500">
+                  로그인
+                </Link>
+                <Link to="/signup" className="hover:text-indigo-500">
+                  회원가입
+                </Link>
+              </>
+            )}
+          </nav>
+        </div>
 
         {/* 모바일 메뉴 버튼 */}
-        <button className="md:hidden" onClick={() => setOpen(!open)}>
-          {open ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
-        </button>
+        <div className="md:hidden flex items-center gap-2">
+          <DarkModeToggle />
+
+          <button className="md:hidden" onClick={() => setOpen(!open)}>
+            {open ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
+          </button>
+        </div>
 
         {/* 모바일 드롭다운 메뉴 */}
         {open && (

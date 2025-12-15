@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import { getErrorMessage } from "../utils/errorMessages";
 import { isValidEmail } from "../utils/validation";
 import Input from "../components/Input";
+import { Link } from "react-router-dom";
 
 function Signup() {
   const navigate = useNavigate();
@@ -77,6 +78,13 @@ function Signup() {
             회원가입
           </button>
         </form>
+
+        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          이미 계정이 있으신가요?{" "}
+          <Link to="/login" className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline">
+            로그인
+          </Link>
+        </div>
       </div>
     </div>
   );

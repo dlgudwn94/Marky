@@ -99,7 +99,7 @@ function Home() {
       {filterTag && (
         <div className="mb-4">
           <span className="text-sm text-gray-500 mr-2">태그 필터:</span>
-          <span className="bg-indigo-100 text-indigo-600 px-2 py-1 rounded mr-2">{filterTag}</span>
+          <span className="bg-indigo-100 text-indigo-600 dark:bg-gray-800 px-2 py-1 rounded mr-2">{filterTag}</span>
           <button onClick={clearFilter} className="text-sm text-red-500 underline">
             지우기
           </button>
